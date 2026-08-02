@@ -1,0 +1,37 @@
+Phase 0
+
+I, Ayush Khangar will be once again implementing this whole pipeline from scratch.
+Workflow: developer-> github->CI/CD->security scans -> container registry -> kubernetes -> monitoring.
+
+now->
+Developer (local)
+   │  git push
+   ▼
+GitHub Repo ──► GitHub Actions (CI/CD)
+                    │
+                    ├─ Lint + Unit Tests (PyTest)
+                    ├─ SAST (Semgrep)
+                    ├─ Secrets scan (GitLeaks)
+                    ├─ Dependency scan
+                    ├─ Docker build
+                    ├─ Trivy (container scan)
+                    ├─ Push image → AWS ECR
+                    └─ Deploy trigger (webhook to EC2)
+                            │
+                            ▼
+                     AWS EC2 (t2.micro)
+                    ├─ Docker Compose
+                    │  ├─ Flask App
+                    │  ├─ PostgreSQL
+                    │  ├─ Prometheus
+                    │  └─ Grafana
+                    └─ Security monitoring
+
+Local (Learning Only):
+  Kubernetes (Minikube) + all manifests (Phase 7)
+  → Shows you *can* do K8s, deployable without cloud costs
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+New-Item -ItemType Directory -Force app, tests, docker, ".github/workflows", security, k8s, vault, monitoring, docs
+New-Item -ItemType File -Force .env.example
