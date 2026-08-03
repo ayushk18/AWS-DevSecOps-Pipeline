@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # Flask Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: devsecops-app
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_ENV=production
+      - DATABASE_URL=postgresql://devsecops_user:devsecops_password@db:5432/devsecops_db
+      - SQLALCHEMY_DATABASE_URI=postgresql://devsecops_user:devsecops_password@db:5432/devsecops_db
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - devsecops-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    volumes:
+      - ./app:/app/app
+      - ./app.py:/app/app.py
+
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: devsecops-db
+    environment:
+      - POSTGRES_USER=devsecops_user
+      - POSTGRES_PASSWORD=devsecops_password
+      - POSTGRES_DB=devsecops_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - devsecops-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U devsecops_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  devsecops-network:
+    driver: bridge
