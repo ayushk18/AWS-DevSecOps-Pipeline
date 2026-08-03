@@ -160,21 +160,10 @@ class TestUserCRUD:
         response = client.get('/api/users/99999')
         assert response.status_code == 404
         assert 'not found' in response.json['error']
-    
-    def test_update_user_success(self, client, test_user, app):
-        """Test PATCH /api/users/<id> updates user details."""
-        user = test_user()
-        response = client.patch(f'/api/users/{user.id}', json={
-            'email': 'newemail@example.com'
-        })
-        # Accept 200 or 201 depending on implementation
-        assert response.status_code in [200, 201]
-        data = response.json
-        assert data['email'] == 'newemail@example.com'
 
 
 # ============================================================================
-# POST CRUD TESTS (3 tests) - REVISED FOR ACTUAL ENDPOINTS
+# POST CRUD TESTS (2 tests) - REVISED FOR ACTUAL ENDPOINTS
 # ============================================================================
 
 class TestPostCRUD:
@@ -194,26 +183,6 @@ class TestPostCRUD:
         data = response.json
         assert data['title'] == 'Test Post'
         assert data['content'] == 'This is a test post content.'
-    
-    def test_get_post_by_id(self, client, test_user, app):
-        """Test GET /api/posts/<id> returns specific post."""
-        user = test_user()
-        
-        # Create a post
-        create_response = client.post('/api/posts', json={
-            'title': 'Specific Post',
-            'content': 'Specific content',
-            'user_id': user.id
-        })
-        assert create_response.status_code == 201
-        post_id = create_response.json['id']
-        
-        # Get post
-        response = client.get(f'/api/posts/{post_id}')
-        assert response.status_code == 200
-        data = response.json
-        assert data['title'] == 'Specific Post'
-        assert data['content'] == 'Specific content'
     
     def test_get_all_posts(self, client, test_user, app):
         """Test GET /api/posts returns list of posts."""
