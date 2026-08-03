@@ -1,11 +1,9 @@
 # app/__init__.py
-from flask import Flask
-from flask import request
+from flask import Flask, request
 from flask_cors import CORS
 from app.config import active_config
 from app.models import db
 from app.utils import logger, http_requests_total
-from datetime import datetime
 import time
 
 def create_app(config=None):
