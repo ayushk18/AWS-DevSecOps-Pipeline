@@ -15,11 +15,14 @@ COPY app/ ./app/
 COPY app.py .
 COPY .env.example .
 
+# Create instance directory with proper permissions BEFORE switching user
+RUN mkdir -p /app/instance && chmod 755 /app/instance && chown appuser:appuser /app/instance
+
 ENV PYTHONUNBUFFERED=1
 
 EXPOSE 5000
 
 USER appuser
 
-# Use gunicorn with proper app factory syntax
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--timeout", "120", "app:create_app()"]
+# Remove the () from the app factory call
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--timeout", "120", "app:create_app"]
