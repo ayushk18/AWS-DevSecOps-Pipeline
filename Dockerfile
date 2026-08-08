@@ -24,5 +24,5 @@ EXPOSE 5000
 
 USER appuser
 
-# Remove the () from the app factory call
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--timeout", "120", "app:create_app"]
+# Fixed: app:app instead of app:create_app
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--timeout", "120", "app:app"]
