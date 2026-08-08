@@ -1,0 +1,28 @@
+{
+  "family": "aws-devsecops-pipeline-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::632295790690:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "aws-devsecops-pipeline",
+      "image": "632295790690.dkr.ecr.us-east-1.amazonaws.com/aws-devsecops-pipeline:latest",
+      "portMappings": [
+        {
+          "containerPort": 5000,
+          "protocol": "tcp"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/aws-devsecops-pipeline",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}
