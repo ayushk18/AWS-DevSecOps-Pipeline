@@ -25,4 +25,4 @@ EXPOSE 5000
 USER appuser
 
 # Fixed: app:app instead of app:create_app
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--timeout", "120", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--timeout", "120", "wsgi:app"]
