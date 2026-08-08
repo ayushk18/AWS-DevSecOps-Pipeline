@@ -97,9 +97,76 @@ jobs:
           echo "✅ Trivy Vulnerability Scan Completed"
           echo "📍 View results in GitHub Security tab: Settings → Security → Code scanning"
 
+  push-ecr:
+    name: Push to Amazon ECR
+    runs-on: ubuntu-latest
+    needs: scan-image
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      - name: ECR Push Summary
+        run: |
+          echo "✅ Image Pushed to Amazon ECR"
+          echo "📦 Registry: Amazon ECR"
+          echo "🏷️ Repository: aws-devsecops-pipeline"
+          echo "📋 Tags:"
+          echo "   - ${{ github.sha }}"
+          echo "   - latest"
+
+  deploy-ecs:
+    name: Deploy to ECS
+    runs-on: ubuntu-latest
+    needs: push-ecr
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Force new ECS deployment
+        run: |
+          aws ecs update-service \
+            --cluster devsecops-cluster \
+            --service devsecops-service \
+            --force-new-deployment
+
+      - name: ECS Deployment Summary
+        run: |
+          echo "✅ ECS Deployment Triggered"
+          echo "🚀 Cluster: devsecops-cluster"
+          echo "📦 Service: devsecops-service"
+          echo "⏳ Check deployment status in AWS Console"
+
   notify:
     name: Workflow Summary
-    needs: [push-docker, scan-image]
+    needs: [push-docker, scan-image, push-ecr, deploy-ecs]
     runs-on: ubuntu-latest
     if: always()
 
@@ -107,12 +174,14 @@ jobs:
       - name: Build Status Report
         run: |
           echo "═══════════════════════════════════════════════════════════"
-          echo "            🐳 DOCKER PUSH WORKFLOW SUMMARY"
+          echo "       🐳 DOCKER PUSH & AWS DEPLOYMENT WORKFLOW SUMMARY"
           echo "═══════════════════════════════════════════════════════════"
           echo ""
           echo "📊 Job Status:"
-          echo "   • Push Docker Image: ${{ needs.push-docker.result }}"
-          echo "   • Scan with Trivy:   ${{ needs.scan-image.result }}"
+          echo "   • Push Docker (GHCR): ${{ needs.push-docker.result }}"
+          echo "   • Scan with Trivy:    ${{ needs.scan-image.result }}"
+          echo "   • Push to ECR:        ${{ needs.push-ecr.result }}"
+          echo "   • Deploy to ECS:      ${{ needs.deploy-ecs.result }}"
           echo ""
           echo "📦 Image Details:"
           echo "   Repository: ${{ github.repository }}"
@@ -122,12 +191,13 @@ jobs:
           echo ""
           echo "🔗 Links:"
           echo "   • Actions: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          echo "   • Packages: ${{ github.server_url }}/${{ github.repository }}/pkgs/container/aws-devsecops-pipeline"
+          echo "   • GHCR:    ${{ github.server_url }}/${{ github.repository }}/pkgs/container/aws-devsecops-pipeline"
+          echo "   • AWS ECR: https://console.aws.amazon.com/ecr/repositories/aws-devsecops-pipeline"
           echo ""
           echo "═══════════════════════════════════════════════════════════"
 
       - name: Workflow Failed Alert
-        if: needs.push-docker.result == 'failure' || needs.scan-image.result == 'failure'
+        if: needs.push-docker.result == 'failure' || needs.scan-image.result == 'failure' || needs.push-ecr.result == 'failure' || needs.deploy-ecs.result == 'failure'
         run: |
           echo "❌ WORKFLOW FAILED"
           echo "Check logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
