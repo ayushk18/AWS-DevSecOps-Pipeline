@@ -13,6 +13,7 @@ COPY --from=builder /install /usr/local
 # Copy application code
 COPY app/ ./app/
 COPY app.py .
+COPY wsgi.py .
 COPY .env.example .
 
 # Create instance directory with proper permissions BEFORE switching user
