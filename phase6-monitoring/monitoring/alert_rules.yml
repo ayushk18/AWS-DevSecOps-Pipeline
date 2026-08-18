@@ -1,0 +1,38 @@
+groups:
+  - name: flask-app-alerts
+    rules:
+      - alert: HighErrorRate
+        expr: rate(app_errors_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Elevated application error rate"
+          description: "app_errors_total is increasing faster than 0.1/sec over the last 5 minutes."
+
+      - alert: HighRequestLatencyP95
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "P95 request latency above 1s"
+          description: "95th percentile request latency has exceeded 1 second for 5 minutes."
+
+      - alert: HighAuthFailureRate
+        expr: rate(auth_attempts_total{result="failure"}[5m]) > 0.2
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Elevated authentication failure rate"
+          description: "Auth failures are occurring faster than 0.2/sec — possible brute force attempt."
+
+      - alert: MetricsEndpointDown
+        expr: up{job="flask-app-aws"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Flask app metrics endpoint unreachable"
+          description: "Prometheus has not been able to scrape /api/metrics for over 1 minute."

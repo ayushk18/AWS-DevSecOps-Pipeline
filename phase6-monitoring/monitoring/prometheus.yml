@@ -1,0 +1,24 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "alert_rules.yml"
+
+scrape_configs:
+  # Scrapes the Flask app's Prometheus metrics endpoint, which is
+  # exposed publicly through the AWS Application Load Balancer.
+  # Update the target below if your ALB DNS name changes.
+  - job_name: "flask-app-aws"
+    metrics_path: "/api/metrics"
+    scheme: http
+    static_configs:
+      - targets: ["devsecops-alb-1388549252.us-east-1.elb.amazonaws.com:80"]
+        labels:
+          environment: "production"
+          service: "aws-devsecops-pipeline"
+
+  # Prometheus scraping itself (useful for confirming the stack is alive)
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
